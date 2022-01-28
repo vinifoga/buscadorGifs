@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -14,13 +13,16 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String? _search;
   int _offset = 0;
-  Uri urlTreading = Uri.parse("https://api.giphy.com/v1/gifs/trending?api_key=QSX1BUjU4QJnHTIUBLvxCc24R8PZmcze&limit=20&rating=g");
+  Uri urlTreading = Uri.parse(
+      "https://api.giphy.com/v1/gifs/trending?api_key=QSX1BUjU4QJnHTIUBLvxCc24R8PZmcze&limit=20&rating=g");
+
   Future<Map> _getGifs() async {
     http.Response response;
-    if(_search == null) {
+    if (_search == null) {
       response = await http.get(urlTreading);
     } else {
-      Uri urlSearch = Uri.parse("https://api.giphy.com/v1/gifs/search?api_key=QSX1BUjU4QJnHTIUBLvxCc24R8PZmcze&q=$_search&limit=20&offset=$_offset&rating=g&lang=en");
+      Uri urlSearch = Uri.parse(
+          "https://api.giphy.com/v1/gifs/search?api_key=QSX1BUjU4QJnHTIUBLvxCc24R8PZmcze&q=$_search&limit=20&offset=$_offset&rating=g&lang=en");
       response = await http.get(urlSearch);
     }
     return json.decode(response.body);
@@ -32,13 +34,13 @@ class _HomePageState extends State<HomePage> {
     _getGifs().then((map) => print(map));
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Image.network("https://developers.giphy.com/static/img/dev-logo-lg.gif"),
+        title: Image.network(
+            "https://developers.giphy.com/static/img/dev-logo-lg.gif"),
         centerTitle: true,
       ),
       backgroundColor: Colors.black,
@@ -48,16 +50,61 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.fromLTRB(8.0, 10.0, 8.0, 10.0),
             child: TextField(
               decoration: InputDecoration(
-                labelText: "Pesquise aqui",
-                labelStyle: TextStyle(color: Colors.white),
-                border: OutlineInputBorder()
-              ),
+                  labelText: "Pesquise aqui",
+                  labelStyle: TextStyle(color: Colors.white),
+                  border: OutlineInputBorder()),
               style: TextStyle(color: Colors.white, fontSize: 18.0),
               textAlign: TextAlign.center,
             ),
-          )
+          ),
+          Expanded(
+            child: FutureBuilder(
+                future: _getGifs(),
+                builder: (context, snapshot) {
+                  switch (snapshot.connectionState) {
+                    case ConnectionState.waiting:
+                    case ConnectionState.none:
+                      return Center(
+                        child: const SizedBox(
+                          width: 150.0,
+                          height: 150.0,
+                          child: CircularProgressIndicator(
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            strokeWidth: 5.0,
+                          ),
+                        ),
+                      );
+                    default:
+                      if (snapshot.hasError)
+                        return Container();
+                      else
+                        return _createGifTable(context, snapshot);
+                  }
+                }),
+          ),
         ],
       ),
     );
+  }
+
+  Widget _createGifTable(BuildContext context, AsyncSnapshot snapshot) {
+    return GridView.builder(
+        padding: const EdgeInsets.all(10.0),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 10.0,
+          mainAxisSpacing: 10.0,
+
+        ),
+        itemCount: snapshot.data["data"].length,
+        itemBuilder: (context, index) {
+          return GestureDetector(
+            child: Image.network(
+              snapshot.data["data"][index]["images"]["fixed_height"]["url"],
+              fit: BoxFit.cover,
+            ),
+          );
+        });
   }
 }
